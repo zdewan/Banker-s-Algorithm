@@ -11,6 +11,8 @@ int **allocated;
 int **need;
 
 int totalCustomers = 0;
+int availableSize;
+
 
 //Read the input file
 char *readFile() {
@@ -43,8 +45,22 @@ void checkNeed(int a, int b, int **allocated, int maximum[a][b], int **need) {
 			need[c][d] = maximum[c][d] - allocated[c][d];
 	}
 }
+void checkAvailable() {
+	int temp;
+	int temp2;
+
+	for (int m = 0; m < availableSize; m++) {
+		temp = 0;
+
+		for (int n = 0; n < totalCustomers; n++)
+			temp = temp + allocated[n][m];
+		temp2 = available[m] - temp;
+		available[m] = temp2;
+	}
+}
+
 int main(int argc, char *argv[]) {
-	int availableSize = argc - 1;
+	availableSize = argc - 1;
 	char * fileInput = readFile();
 
 //Dynamic allocation for: memory for available, allocated, need, and maximum - in preparation for the bankers algorithm.
@@ -125,68 +141,132 @@ int main(int argc, char *argv[]) {
 // It looks for RQ, RL, Status, Run, and Exit.
 
 	char userInput[100];
-	while (1) {
-		printf("Enter Command: ");
-		fgets(userInput, sizeof(userInput), stdin);
+	char tempCopy[100];
+	printf("Enter Command: ");
+	fgets(userInput, 100, stdin);
+	strcpy(tempCopy, userInput);
+	int safe = 0;
 
-		//After getting user input we need to parse the information into its commands/numbers.
-		/*int total_string = 0;
-		for (int z = 0; userInput[z] != '\0'; z++) {
-			if (userInput[z] == ' ' || userInput[z] == '\n'
-					|| userInput[z] == '\t')
+	while (1) {
+		if (safe > 0) {
+			printf("Enter Command: ");
+			fgets(userInput, sizeof userInput, stdin);
+			strcpy(tempCopy, userInput);
+		}
+
+		// String splitting
+		int total_string = 0;
+		for (int z = 0; tempCopy[z] != '\0'; z++) {
+			if (tempCopy[z] == ' ' || tempCopy[z] == '\n'
+					|| tempCopy[z] == '\t')
 				total_string++;
 		}
-		 */
+
 		// parser initialization
+		char* tok = strtok(tempCopy, " ");
+		char *splitInput[100];
+
 		int i = 0;
-		int spaceCheck = 0;
-		char *null = "\0";
-		char *space = " ";
-		while (userInput[i] != null[0]) {
-			if (userInput[i] == space[0]) {
-				spaceCheck = 1;
-				break;
-			}
-			i++;
-		}
-
-
-		char parsedCommand[100];
-		char *save[100];
-		if (spaceCheck == 0) {
-			save[0] = userInput;
-		} else {
-			char *tkn = strtok(parsedCommand, " ");
-			i = 0;
-			while (tkn != NULL && i <= totalCustomers) {
-				save[i] = tkn;
-				tkn = strtok(NULL, " ");
+		if (total_string >= 2) {
+			while (tok != NULL && i <= totalCustomers) {
+				splitInput[i] = tok;
+				tok = strtok(NULL, " ");
 				i++;
 			}
-			//int str_len = i;
-			i = 0;
-		}
-		printf("%s\n", save[0]);
+			}
+
+		else
+			strcpy(splitInput[0], tempCopy);
+
+		int inputLen = i;
+		i = 0;
+
+		//Performing each command
+		if (strcmp(splitInput[0], "RQ") == 0) {
+			if (atoi(splitInput[1]) >= totalCustomers) {
+				printf("Request cannot be bigger that max customers\n");
+			}
+			else {
+				for (int y = 2; y < (inputLen); y++) {
+					allocated[atoi(splitInput[1])][y - 2] = atoi(splitInput[y]);
+				}
+				printf("State is safe, and request is satisfied\n");
+			}
+		} else if (strcmp(splitInput[0], "RL") == 0) {
+			int flag;
+
+			if (atoi(splitInput[1]) >= totalCustomers) {
+				printf(
+						"Request cannot be bigger that max customers\n");
+			}
+
+			else {
+
+				for (int q = 2; q < (inputLen); q++) {
+					int releaseValue = allocated[atoi(splitInput[1])][q - 2]
+							- atoi(splitInput[q]);
+
+					if (releaseValue < 0) {
+						printf("Release is unsatisfied\n");
+						flag = 1;
+						break;
+					}
+
+					else
+						allocated[atoi(splitInput[1])][q - 2] = releaseValue;
+
+					if (q == inputLen - 1)
+						printf("Release is satisfied\n");
+				}
+				if (flag == 1)
+					continue;
+			}
+		} else if (strcmp(splitInput[0], "Status\n") == 0) {
+
+			printf("Available Resources:\n");
+			checkAvailable();
+			for (int j = 0; j < availableSize; j++) {
+				printf("%d ", available[j]);
+			}
 
 
 
+			printf("\nMaximum Resources:\n");
+			for (int n = 0; n < totalCustomers; n++) {
+				for (int m = 0; m < availableSize; m++) {
+					printf("%d ", maximum[n][m]);
+				}
+				printf("\n");
+			}
 
 
 
-		if (strcmp(save[0], "RQ") == 0) {
-			printf("RQ\n");
-		} else if (strcmp(save[0], "RL") == 0) {
-			printf("RL\n");
-		} else if (strcmp(save[0], "Status") == 0) {
-			printf("Status\n");
-		} else if (strcmp(save[0], "Run") == 0) {
+			printf("Allocated Resources:\n");
+			for (int l = 0; l < totalCustomers; l++) {
+				for (int p = 0; p < availableSize; p++)
+					printf("%d ", allocated[l][p]);
+				printf("\n");
+			}
+
+
+
+			printf("Need Resources:\n");
+			checkNeed(availableSize, totalCustomers, allocated, maximum, need);
+			for (int l = 0; l < totalCustomers; l++) {
+				for (int p = 0; p < availableSize; p++)
+					printf("%d ", need[l][p]);
+
+				printf("\n");
+			}
+		} else if (strcmp(splitInput[0], "Run\n") == 0) {
 			printf("Run\n");
-		} else if (strcmp(save[0], "Exit") == 0) {
-			//printf("Exit\n");
+		} else if (strcmp(splitInput[0], "Exit\n") == 0) {
+			printf("Exit\n");
 			return 1;
 		} else {
 			printf("Invalid input, please try again.\n");
 		}
+		safe++;
 	}
 
 	return 0;
