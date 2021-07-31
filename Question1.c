@@ -10,7 +10,7 @@ int *available;
 int **allocated;
 int **need;
 
-int totalCustomers = 1;
+int totalCustomers = 0;
 
 
 //Read the input file
@@ -18,7 +18,7 @@ char *readFile() {
 	FILE *sample = fopen("sample4_in.txt", "r");
 
 	if (!sample) {
-		printf("FILE OPEN ERROR: File Not Found\n");
+		printf("No File Found!\n");
 		return ("ERROR!");
 	}
 
@@ -45,13 +45,10 @@ void checkNeed(int a, int b, int **allocated, int maximum[a][b], int **need) {
 	}
 }
 int main(int argc, char *argv[]) {
-	char * fileIn = readFile();
 	int availableSize = argc - 1;
-	int maximum[totalCustomers][availableSize];
+	char * fileInput = readFile();
 
-	printf("%d", totalCustomers);
-
-//Dynamic allocation for: memory for available, alocated, need, and maximum - in preparation for the bankers algorithm.
+//Dynamic allocation for: memory for available, allocated, need, and maximum - in preparation for the bankers algorithm.
 
 //available
 	available = (int*) malloc(availableSize * sizeof(int));
@@ -75,5 +72,58 @@ int main(int argc, char *argv[]) {
 	for (int i = 0; i < totalCustomers; i++) {
 		need[i] = (int *) malloc(availableSize * sizeof(int));
 	}
-	return 1;
+
+	//Maximum
+	int maximum[totalCustomers][availableSize];
+	for (int m = 0; m < totalCustomers; m++) {
+		for (int n = 0; n < availableSize; n++) {
+			maximum[m][n] = 0;
+		}
+	}
+
+	//Token the input given in the file to separate each value into some value maximum[i][j]
+	char* lines[totalCustomers];
+	char *command = NULL;
+	int i = 0;
+	command = strtok(fileInput, "\r\n");
+	while (command != NULL) {
+		lines[i] = malloc(sizeof(command) * sizeof(char));
+		strcpy(lines[i], command);
+		i++;
+		command = strtok(NULL, "\r\n");
+	}
+
+	for (int k = 0; k < totalCustomers; k++) {
+		char* tok = NULL;
+		int l = 0;
+		tok = strtok(lines[k], ",");
+		while (tok != NULL) {
+			maximum[k][l] = atoi(tok);
+			l++;
+			tok = strtok(NULL, ",");
+		}
+	}
+
+//Now that all the values have been initialized, we can begin to run the main part of the program in which the user can run various commands.
+
+//Start by printing number of customers, available resources, and maximum resources.
+	printf("Number of Customers:%d", totalCustomers);
+
+	printf("\nCurrently Available resources: ");
+	for (int n = 0; n < availableSize; n++) {
+		printf("%d ", available[n]);
+	}
+
+	printf("\nMaximum resources from file:\n");
+	for (int n = 0; n < totalCustomers; n++) {
+		for (int m = 0; m < availableSize; m++) {
+			printf("%d ", maximum[n][m]);
+		}
+		printf("\n");
+	}
+
+//Start the ongoing while loop which takes user input.
+
+
+	return 0;
 }
