@@ -12,7 +12,6 @@ int **need;
 
 int totalCustomers = 0;
 
-
 //Read the input file
 char *readFile() {
 	FILE *sample = fopen("sample4_in.txt", "r");
@@ -123,7 +122,72 @@ int main(int argc, char *argv[]) {
 	}
 
 //Start the ongoing while loop which takes user input.
+// It looks for RQ, RL, Status, Run, and Exit.
 
+	char userInput[100];
+	while (1) {
+		printf("Enter Command: ");
+		fgets(userInput, sizeof(userInput), stdin);
+
+		//After getting user input we need to parse the information into its commands/numbers.
+		/*int total_string = 0;
+		for (int z = 0; userInput[z] != '\0'; z++) {
+			if (userInput[z] == ' ' || userInput[z] == '\n'
+					|| userInput[z] == '\t')
+				total_string++;
+		}
+		 */
+		// parser initialization
+		int i = 0;
+		int spaceCheck = 0;
+		char *null = "\0";
+		char *space = " ";
+		while (userInput[i] != null[0]) {
+			if (userInput[i] == space[0]) {
+				spaceCheck = 1;
+				break;
+			}
+			i++;
+		}
+
+
+		char parsedCommand[100];
+		char *save[100];
+		if (spaceCheck == 0) {
+			save[0] = userInput;
+		} else {
+			char *tkn = strtok(parsedCommand, " ");
+			i = 0;
+			while (tkn != NULL && i <= totalCustomers) {
+				save[i] = tkn;
+				tkn = strtok(NULL, " ");
+				i++;
+			}
+			//int str_len = i;
+			i = 0;
+		}
+		printf("%s\n", save[0]);
+
+
+
+
+
+
+		if (strcmp(save[0], "RQ") == 0) {
+			printf("RQ\n");
+		} else if (strcmp(save[0], "RL") == 0) {
+			printf("RL\n");
+		} else if (strcmp(save[0], "Status") == 0) {
+			printf("Status\n");
+		} else if (strcmp(save[0], "Run") == 0) {
+			printf("Run\n");
+		} else if (strcmp(save[0], "Exit") == 0) {
+			//printf("Exit\n");
+			return 1;
+		} else {
+			printf("Invalid input, please try again.\n");
+		}
+	}
 
 	return 0;
 }
