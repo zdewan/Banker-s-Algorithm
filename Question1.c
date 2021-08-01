@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-/*#include <pthread.h> */
+#include <pthread.h>
 #include <sys/stat.h>
 #include <time.h>
+#include <semaphore.h>
 
 int *available;
 int **allocated;
@@ -12,9 +13,9 @@ int **need;
 
 int totalCustomers = 0;
 int availableSize;
+int *bankerAns;
 
-
-//Read the input file
+//Reads the input file and assigns totalCustomers its value
 char *readFile() {
 	FILE *sample = fopen("sample4_in.txt", "r");
 
@@ -39,31 +40,108 @@ char *readFile() {
 	return fileContent;
 }
 
-void checkNeed(int a, int b, int **allocated, int maximum[a][b], int **need) {
-	for (int c = 0; c < b; c++) {
-		for (int d = 0; d < a; d++)
-			need[c][d] = maximum[c][d] - allocated[c][d];
+//Checks the needed resources for each customer
+void checkNeed(int i, int j, int **allocated, int maximum[j][i], int **needed) {
+	for (int m = 0; m < j; m++) {
+		for (int n = 0; n < i; n++)
+			need[m][n] = maximum[m][n] - allocated[m][n];
 	}
 }
-void checkAvailable() {
-	int temp;
-	int temp2;
 
+//Checks available resources
+void checkAvailable() {
+	int temp1, temp2;
 	for (int m = 0; m < availableSize; m++) {
-		temp = 0;
+		temp1 = 0;
 
 		for (int n = 0; n < totalCustomers; n++)
-			temp = temp + allocated[n][m];
-		temp2 = available[m] - temp;
+			temp1 = temp1 + allocated[n][m];
+		temp2 = available[m] - temp1;
 		available[m] = temp2;
 	}
+}
+//Performs the bankers algorithm
+//https://www.geeksforgeeks.org/bankers-algorithm-in-operating-system-2/ - citing this source as the framework used to implement this algorithm
+int bankersAlgorithm() {
+	int i, j, k;
+	int f[totalCustomers], ind = 0;
+	for (k = 0; k < totalCustomers; k++) {
+		f[k] = 0;
+	}
+	int y = 0;
+	for (k = 0; k < 5; k++) {
+		for (i = 0; i < totalCustomers; i++) {
+			if (f[i] == 0) {
+
+				int flag = 0;
+				for (j = 0; j < availableSize; j++) {
+					if (need[i][j] > available[j]) {
+						flag = 1;
+						break;
+					}
+				}
+
+				if (flag == 0) {
+					bankerAns[ind++] = i;
+					for (y = 0; y < availableSize; y++)
+						available[y] += allocated[i][y];
+					f[i] = 1;
+				}
+			}
+		}
+	}
+	printf("Safe Sequence is: ");
+	for (i = 0; i < totalCustomers; i++)
+		printf("%d ", bankerAns[i]);
+	printf("\n");
+
+	return 0;
+
+}
+//Runner function for threads
+void *runner(void *p) {
+
+	int *client = (int *) p;
+
+	printf("\tAllocated resources: ");
+	for (int p = 0; p < availableSize; p++) {
+		printf("%d ", allocated[*client][p]);
+	}
+	printf("\n");
+
+	printf("\tNeeded:");
+	for (int i = 0; i < availableSize; i++) {
+		printf("%d ", need[*client][i]);
+	}
+	printf("\n");
+
+	printf("\tAvailable: ");
+	for (int i = 0; i < availableSize; i++) {
+		printf("%d ", available[i]);
+	}
+	printf("\n");
+
+	printf("\tThread has started\n");
+	printf("\tThread has finished\n");
+	printf("\tThread is releasing resources\n");
+	printf("\tNew Available:\t");
+
+	for (int i = 0; i < availableSize; i++) {
+		available[i] = available[i] + allocated[*client][i];
+		printf("%d ", available[i]);
+	}
+
+	printf("\n");
+	return NULL;
+
 }
 
 int main(int argc, char *argv[]) {
 	availableSize = argc - 1;
 	char * fileInput = readFile();
+	bankerAns = (int*) malloc(totalCustomers * sizeof(int));
 
-//Dynamic allocation for: memory for available, allocated, need, and maximum - in preparation for the bankers algorithm.
+//Dynamic allocation memory for:available, allocated, need, and maximum - in preparation for the bankers algorithm.
 
 //available
 	available = (int*) malloc(availableSize * sizeof(int));
@@ -96,7 +174,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	//Token the input given in the file to separate each value into some value maximum[i][j]
+	//Token the input given in the file and store it into maximum[i][j]
 	char* lines[totalCustomers];
 	char *command = NULL;
 	int i = 0;
@@ -154,15 +232,14 @@ int main(int argc, char *argv[]) {
 			strcpy(tempCopy, userInput);
 		}
 
-		// String splitting
+		//Takes user input and parses it into individual sections in a new array
 		int total_string = 0;
-		for (int z = 0; tempCopy[z] != '\0'; z++) {
-			if (tempCopy[z] == ' ' || tempCopy[z] == '\n'
-					|| tempCopy[z] == '\t')
+		for (int n = 0; tempCopy[n] != '\0'; n++) {
+			if (tempCopy[n] == ' ' || tempCopy[n] == '\n'
+					|| tempCopy[n] == '\t')
 				total_string++;
 		}
 
-		// parser initialization
 		char* tok = strtok(tempCopy, " ");
 		char *splitInput[100];
 
@@ -187,8 +264,8 @@ int main(int argc, char *argv[]) {
 				printf("Request cannot be bigger that max customers\n");
 			}
 			else {
-				for (int y = 2; y < (inputLen); y++) {
-					allocated[atoi(splitInput[1])][y - 2] = atoi(splitInput[y]);
+				for (int j = 2; j < (inputLen); j++) {
+					allocated[atoi(splitInput[1])][j - 2] = atoi(splitInput[j]);
 				}
 				printf("State is safe, and request is satisfied\n");
 			}
@@ -196,8 +273,7 @@ int main(int argc, char *argv[]) {
 			int flag;
 
 			if (atoi(splitInput[1]) >= totalCustomers) {
-				printf(
-						"Request cannot be bigger that max customers\n");
+				printf("Request cannot be bigger that max customers\n");
 			}
 
 			else {
@@ -222,7 +298,6 @@ int main(int argc, char *argv[]) {
 					continue;
 			}
 		} else if (strcmp(splitInput[0], "Status\n") == 0) {
-
 			printf("Available Resources:\n");
 			checkAvailable();
 			for (int j = 0; j < availableSize; j++) {
@@ -259,9 +334,23 @@ int main(int argc, char *argv[]) {
 				printf("\n");
 			}
 		} else if (strcmp(splitInput[0], "Run\n") == 0) {
-			printf("Run\n");
+			checkNeed(availableSize, totalCustomers, allocated, maximum, need);
+			int bankerCheck = bankersAlgorithm();
+
+			if (bankerCheck != 0) {
+				printf("No safe sequence\n");
+				return -1;
+			}
+
+			for (int g = 0; g < totalCustomers; g++) {
+				int arg = bankerAns[g];
+				printf("--> Customer/Thread %d\n", arg);
+
+				pthread_t t1;
+				pthread_create(&t1, NULL, runner, &arg);
+				pthread_join(t1, NULL);
+			}
 		} else if (strcmp(splitInput[0], "Exit\n") == 0) {
-			printf("Exit\n");
 			return 1;
 		} else {
 			printf("Invalid input, please try again.\n");
