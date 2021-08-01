@@ -10,9 +10,11 @@
 int *available;
 int **allocated;
 int **need;
+int **maximum;
 
 int totalCustomers = 0;
 int availableSize;
+
 int *bankerAns;
 
 //Reads the input file and assigns totalCustomers its value
@@ -41,7 +43,7 @@ char *readFile() {
 }
 
 //Checks the needed resources for each customer
-void checkNeed(int i, int j, int **allocated, int maximum[j][i], int **needed) {
+void checkNeed(int i, int j, int **allocated, int **maximum, int **needed) {
 	for (int m = 0; m < j; m++) {
 		for (int n = 0; n < i; n++)
 			need[m][n] = maximum[m][n] - allocated[m][n];
@@ -62,14 +64,14 @@ void checkAvailable() {
 }
 //Performs the bankers algorithm
 //https://www.geeksforgeeks.org/bankers-algorithm-in-operating-system-2/ - citing this source as the framework used to implement this algorithm
-int bankersAlgorithm() {
+void bankersAlgorithm() {
 	int i, j, k;
 	int f[totalCustomers], ind = 0;
 	for (k = 0; k < totalCustomers; k++) {
 		f[k] = 0;
 	}
 	int y = 0;
-	for (k = 0; k < 5; k++) {
+	for (k = 0; k < totalCustomers; k++) {
 		for (i = 0; i < totalCustomers; i++) {
 			if (f[i] == 0) {
 
@@ -90,13 +92,13 @@ int bankersAlgorithm() {
 			}
 		}
 	}
+
 	printf("Safe Sequence is: ");
 	for (i = 0; i < totalCustomers; i++)
 		printf("%d ", bankerAns[i]);
 	printf("\n");
 
-	return 0;
-
+	return;
 }
 //Runner function for threads
 void *runner(void *p) {
@@ -140,7 +142,6 @@ int main(int argc, char *argv[]) {
 	availableSize = argc - 1;
 	char * fileInput = readFile();
 	bankerAns = (int*) malloc(totalCustomers * sizeof(int));
-
 //Dynamic allocation memory for:available, allocated, need, and maximum - in preparation for the bankers algorithm.
 
 //available
@@ -167,7 +168,10 @@ int main(int argc, char *argv[]) {
 	}
 
 	//Maximum
-	int maximum[totalCustomers][availableSize];
+	maximum = (int **) malloc(totalCustomers * sizeof(int *));
+	for (int i = 0; i < totalCustomers; i++) {
+		maximum[i] = (int *) malloc(availableSize * sizeof(int));
+	}
 	for (int m = 0; m < totalCustomers; m++) {
 		for (int n = 0; n < availableSize; n++) {
 			maximum[m][n] = 0;
@@ -335,12 +339,7 @@ int main(int argc, char *argv[]) {
 			}
 		} else if (strcmp(splitInput[0], "Run\n") == 0) {
 			checkNeed(availableSize, totalCustomers, allocated, maximum, need);
-			int bankerCheck = bankersAlgorithm();
-
-			if (bankerCheck != 0) {
-				printf("No safe sequence\n");
-				return -1;
-			}
+			bankersAlgorithm();
 
 			for (int g = 0; g < totalCustomers; g++) {
 				int arg = bankerAns[g];
@@ -357,6 +356,5 @@ int main(int argc, char *argv[]) {
 		}
 		safe++;
 	}
-
 	return 0;
 }
