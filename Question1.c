@@ -7,6 +7,7 @@
 #include <time.h>
 #include <semaphore.h>
 
+
 int *available;
 int **allocated;
 int **need;
@@ -43,60 +44,64 @@ char *readFile() {
 }
 
 //Checks the needed resources for each customer
-void checkNeed(int i, int j, int **allocated, int **maximum, int **needed) {
-	for (int m = 0; m < j; m++) {
-		for (int n = 0; n < i; n++)
+void checkNeed() {
+	for (int m = 0; m < totalCustomers; m++) {
+		for (int n = 0; n < availableSize; n++)
 			need[m][n] = maximum[m][n] - allocated[m][n];
 	}
 }
 
 //Checks available resources
-void checkAvailable() {
-	int temp1, temp2;
+void updateAvailable(int customer) {
 	for (int m = 0; m < availableSize; m++) {
-		temp1 = 0;
+		available[m] -= allocated[customer][m];
 
-		for (int n = 0; n < totalCustomers; n++)
-			temp1 = temp1 + allocated[n][m];
-		temp2 = available[m] - temp1;
-		available[m] = temp2;
 	}
 }
-//Performs the bankers algorithm
-//https://www.geeksforgeeks.org/bankers-algorithm-in-operating-system-2/ - citing this source as the framework used to implement this algorithm
-void bankersAlgorithm() {
-	int i, j, k;
-	int f[totalCustomers], ind = 0;
-	for (k = 0; k < totalCustomers; k++) {
-		f[k] = 0;
+//Performs the safe sequence for the banker's algorithm
+//https://www.geeksforgeeks.org/program-bankers-algorithm-set-1-safety-algorithm/ - citing this source as the framework used to implement the safe sequence
+void safeSequence() {
+
+	int finish[totalCustomers];
+	for (int p = 0; p < totalCustomers; p++) {
+		finish[p] = 0;
 	}
-	int y = 0;
-	for (k = 0; k < totalCustomers; k++) {
-		for (i = 0; i < totalCustomers; i++) {
-			if (f[i] == 0) {
 
-				int flag = 0;
-				for (j = 0; j < availableSize; j++) {
-					if (need[i][j] > available[j]) {
-						flag = 1;
+	int work[availableSize];
+	for (int i = 0; i < availableSize; i++)
+		work[i] = available[i];
+
+	int count = 0;
+	while (count < totalCustomers) {
+		int found = 0;
+		for (int p = 0; p < totalCustomers; p++) {
+
+			if (finish[p] == 0) {
+				int j;
+				for (j = 0; j < availableSize; j++)
+					if (need[p][j] > work[j])
 						break;
-					}
-				}
 
-				if (flag == 0) {
-					bankerAns[ind++] = i;
-					for (y = 0; y < availableSize; y++)
-						available[y] += allocated[i][y];
-					f[i] = 1;
+				if (j == availableSize) {
+					for (int k = 0; k < availableSize; k++)
+						work[k] += allocated[p][k];
+					bankerAns[count++] = p;
+
+					finish[p] = 1;
+					found = 1;
 				}
 			}
 		}
+
+		if (found == 0) {
+			printf("System is not in safe state");
+			return;
+		}
 	}
 
-	printf("Safe Sequence is: ");
-	for (i = 0; i < totalCustomers; i++)
+	printf("SafeSequenceis: ");
+	for (int i = 0; i < totalCustomers; i++)
 		printf("%d ", bankerAns[i]);
-	printf("\n");
 
 	return;
 }
@@ -126,7 +131,12 @@ void *runner(void *p) {
 	printf("\tThread has started\n");
 	printf("\tThread has finished\n");
 	printf("\tThread is releasing resources\n");
-	printf("\tNew Available:\t");
+	for (int i = 0; i < availableSize; i++) {
+		available[i] += allocated[*client][i];
+		allocated[*client][i] = 0;
+	}
+
+	printf("\tNew Available: ");
 
 	for (int i = 0; i < availableSize; i++) {
 		available[i] = available[i] + allocated[*client][i];
@@ -272,6 +282,7 @@ int main(int argc, char *argv[]) {
 					allocated[atoi(splitInput[1])][j - 2] = atoi(splitInput[j]);
 				}
 				printf("State is safe, and request is satisfied\n");
+				updateAvailable(atoi(splitInput[1]));
 			}
 		} else if (strcmp(splitInput[0], "RL") == 0) {
 			int flag;
@@ -303,7 +314,6 @@ int main(int argc, char *argv[]) {
 			}
 		} else if (strcmp(splitInput[0], "Status\n") == 0) {
 			printf("Available Resources:\n");
-			checkAvailable();
 			for (int j = 0; j < availableSize; j++) {
 				printf("%d ", available[j]);
 			}
@@ -330,7 +340,7 @@ int main(int argc, char *argv[]) {
 
 
 			printf("Need Resources:\n");
-			checkNeed(availableSize, totalCustomers, allocated, maximum, need);
+			checkNeed();
 			for (int l = 0; l < totalCustomers; l++) {
 				for (int p = 0; p < availableSize; p++)
 					printf("%d ", need[l][p]);
@@ -338,13 +348,12 @@ int main(int argc, char *argv[]) {
 				printf("\n");
 			}
 		} else if (strcmp(splitInput[0], "Run\n") == 0) {
-			checkNeed(availableSize, totalCustomers, allocated, maximum, need);
-			bankersAlgorithm();
+			checkNeed();
+			safeSequence();
 
 			for (int g = 0; g < totalCustomers; g++) {
 				int arg = bankerAns[g];
 				printf("--> Customer/Thread %d\n", arg);
-
 				pthread_t t1;
 				pthread_create(&t1, NULL, runner, &arg);
 				pthread_join(t1, NULL);
