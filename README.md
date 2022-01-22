@@ -1,20 +1,4 @@
 # Operating Systems - Banker's Algorithm
-
-Motivation
-	
-	This is a scheduled assignment for my operating systems class.
-
-Installation
-
-	In order to implement this program, the user simply needs access to a linux based operating system, which can then run the 
-	program through the makefile provided.
-
-Screenshots
-	
-	
-Individual contribution
-	
-	All code provided has been implemented by myself and citations have been provided accordingly.
 	
 Features
 
@@ -115,7 +99,16 @@ Use examples
 
 	This can be used in any such scenario in which there are limited resources and they need to be applied appropritatly in order to avoid any problems
 	with deadlocks. The program is built in order to accomodate any file structure that includes more or less customers and resources.
+	
+Individual contribution
+	
+	All code provided has been implemented by myself and citations have been provided accordingly.
 
+Installation
+
+	In order to implement this program, the user simply needs access to a linux based operating system, which can then run the 
+	program through the makefile provided.
+	
 About Developers
 
 	I am a student at Wilfrid Laurier University in the discipline of computer science.
