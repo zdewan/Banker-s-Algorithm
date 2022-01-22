@@ -1,9 +1,5 @@
-# CP386 - A4
+# Operating Systems - Banker's Algorithm
 
-Project Title
-
-	Operating Systems - Banker's Algorithm
-	
 Motivation
 	
 	This is a scheduled assignment for my operating systems class.
